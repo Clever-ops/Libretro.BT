@@ -2797,6 +2797,10 @@ MSG_HASH(
    "savestate"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_SAVESTATE_MAX_DIRECT_SLOT,
+   "savestate_max_direct_slot"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_SAVING_SETTINGS,
    "saving_settings"
    )
