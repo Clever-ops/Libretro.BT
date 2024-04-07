@@ -4074,7 +4074,7 @@ static bool config_load_file(global_t *global,
       if (string_is_equal(tmp_str, "default"))
          dir_set(RARCH_DIR_SAVEFILE, g_defaults.dirs[DEFAULT_DIR_SRAM]);
       else if (path_is_directory(tmp_str)
-               || path_mkdir(tmp_str)
+               || path_mkdir(tmp_str))
       {
          dir_set(RARCH_DIR_SAVEFILE, tmp_str);
 
@@ -4095,7 +4095,7 @@ static bool config_load_file(global_t *global,
       if (string_is_equal(tmp_str, "default"))
          dir_set(RARCH_DIR_SAVESTATE, g_defaults.dirs[DEFAULT_DIR_SAVESTATE]);
       else if (path_is_directory(tmp_str)
-               || path_mkdir(tmp_str)
+               || path_mkdir(tmp_str))
       {
          dir_set(RARCH_DIR_SAVESTATE, tmp_str);
 
