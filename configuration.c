@@ -3923,9 +3923,10 @@ static bool config_load_file(global_t *global,
    {
       if (string_is_equal(settings->paths.directory_screenshot, "default"))
          *settings->paths.directory_screenshot = '\0';
-      else if (!path_is_directory(settings->paths.directory_screenshot))
+      else if (!path_is_directory(settings->paths.directory_screenshot)
+               && !path_mkdir(settings->paths.directory_screenshot))
       {
-         RARCH_WARN("[Config]: 'screenshot_directory' is not an existing directory, ignoring..\n");
+         RARCH_WARN("[Config]: 'screenshot_directory' is not an existing directory, screenshots will save to the content directory..\n");
          *settings->paths.directory_screenshot = '\0';
       }
    }
@@ -4072,7 +4073,8 @@ static bool config_load_file(global_t *global,
    {
       if (string_is_equal(tmp_str, "default"))
          dir_set(RARCH_DIR_SAVEFILE, g_defaults.dirs[DEFAULT_DIR_SRAM]);
-      else if (path_is_directory(tmp_str))
+      else if (path_is_directory(tmp_str)
+               || path_mkdir(tmp_str)
       {
          dir_set(RARCH_DIR_SAVEFILE, tmp_str);
 
@@ -4084,7 +4086,7 @@ static bool config_load_file(global_t *global,
                sizeof(runloop_st->name.savefile));
       }
       else
-         RARCH_WARN("[Config]: 'savefile_directory' is not a directory, ignoring..\n");
+         RARCH_WARN("[Config]: 'savefile_directory' is not a directory, falling back to \"%s\" \n",dir_get_ptr(RARCH_DIR_SAVEFILE));
    }
 
    if (    !retroarch_override_setting_is_set(RARCH_OVERRIDE_SETTING_STATE_PATH, NULL)
@@ -4092,7 +4094,8 @@ static bool config_load_file(global_t *global,
    {
       if (string_is_equal(tmp_str, "default"))
          dir_set(RARCH_DIR_SAVESTATE, g_defaults.dirs[DEFAULT_DIR_SAVESTATE]);
-      else if (path_is_directory(tmp_str))
+      else if (path_is_directory(tmp_str)
+               || path_mkdir(tmp_str)
       {
          dir_set(RARCH_DIR_SAVESTATE, tmp_str);
 
@@ -4110,7 +4113,7 @@ static bool config_load_file(global_t *global,
                sizeof(runloop_st->name.replay));
       }
       else
-         RARCH_WARN("[Config]: 'savestate_directory' is not a directory, ignoring..\n");
+         RARCH_WARN("[Config]: 'savestate_directory' is not a directory, falling back to \"%s\" \n",dir_get_ptr(RARCH_DIR_SAVESTATE));
    }
 
    config_read_keybinds_conf(conf);
