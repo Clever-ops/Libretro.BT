@@ -68,13 +68,16 @@ static struct string_list *ui_companion_cocoatouch_get_app_icons(void)
          attr.i = 0;
          NSDictionary *iconfiles = [[NSBundle mainBundle] objectForInfoDictionaryKey:@"CFBundleIcons"];
          NSString *primary;
+         const char *cstr;
 #if TARGET_OS_TV
          primary = iconfiles[@"CFBundlePrimaryIcon"];
 #else
          primary = iconfiles[@"CFBundlePrimaryIcon"][@"CFBundleIconName"];
 #endif
          list = string_list_new();
-         string_list_append(list, [primary cStringUsingEncoding:kCFStringEncodingUTF8], attr);
+         cstr = [primary cStringUsingEncoding:kCFStringEncodingUTF8];
+         if (cstr)
+            string_list_append(list, cstr, attr);
 
          NSArray<NSString *> *alts;
 #if TARGET_OS_TV
@@ -84,7 +87,11 @@ static struct string_list *ui_companion_cocoatouch_get_app_icons(void)
 #endif
          NSArray<NSString *> *sorted = [alts sortedArrayUsingSelector:@selector(localizedCaseInsensitiveCompare:)];
          for (NSString *str in sorted)
-            string_list_append(list, [str cStringUsingEncoding:kCFStringEncodingUTF8], attr);
+         {
+            cstr = [str cStringUsingEncoding:kCFStringEncodingUTF8];
+            if (cstr)
+               string_list_append(list, cstr, attr);
+         }
       });
 
    return list;
@@ -96,6 +103,40 @@ static void ui_companion_cocoatouch_set_app_icon(const char *iconName)
    if (!string_is_equal(iconName, "Default"))
       str = [NSString stringWithCString:iconName encoding:NSUTF8StringEncoding];
    [[UIApplication sharedApplication] setAlternateIconName:str completionHandler:nil];
+}
+
+static uintptr_t ui_companion_cocoatouch_get_app_icon_texture(const char *icon)
+{
+   static NSMutableDictionary<NSString *, NSNumber *> *textures = nil;
+   static dispatch_once_t once;
+   dispatch_once(&once, ^{
+      textures = [NSMutableDictionary dictionaryWithCapacity:6];
+   });
+
+   NSString *iconName = [NSString stringWithUTF8String:icon];
+   if (!textures[iconName])
+   {
+      UIImage *img = [UIImage imageNamed:iconName];
+      if (!img)
+      {
+         RARCH_LOG("could not load %s\n", icon);
+         return NULL;
+      }
+      NSData *png = UIImagePNGRepresentation(img);
+      if (!png)
+      {
+         RARCH_LOG("could not get png for %s\n", icon);
+         return NULL;
+      }
+
+      uintptr_t item;
+      gfx_display_reset_textures_list_buffer(&item, TEXTURE_FILTER_MIPMAP_LINEAR,
+                                             (void*)[png bytes], (unsigned int)[png length], IMAGE_TYPE_PNG,
+                                             NULL, NULL);
+      textures[iconName] = [NSNumber numberWithUnsignedLong:item];
+   }
+
+   return [textures[iconName] unsignedLongValue];
 }
 
 static void rarch_draw_observer(CFRunLoopObserverRef observer,
@@ -499,22 +540,6 @@ enum
    }
 }
 
-- (NSData *)pngForIcon:(NSString *)iconName
-{
-    UIImage *img;
-    NSData *png;
-    img = [UIImage imageNamed:iconName];
-    if (!img)
-        NSLog(@"could not load %@\n", iconName);
-    else
-    {
-        png = UIImagePNGRepresentation(img);
-        if (!png)
-            NSLog(@"could not get png for %@\n", iconName);
-    }
-    return png;
-}
-
 - (void)applicationDidFinishLaunching:(UIApplication *)application
 {
    char arguments[]   = "retroarch";
@@ -656,8 +681,11 @@ enum
    NSFileManager *manager = [NSFileManager defaultManager];
    NSString     *filename = (NSString*)url.path.lastPathComponent;
    NSError         *error = nil;
-   NSString  *destination = [self.documentsDirectory stringByAppendingPathComponent:filename];
-   /* Copy file to documents directory if it's not already 
+   settings_t *settings   = config_get_ptr();
+   char fullpath[PATH_MAX_LENGTH] = {0};
+   fill_pathname_join_special(fullpath, settings->paths.directory_core_assets, [filename UTF8String], sizeof(fullpath));
+   NSString  *destination = [NSString stringWithUTF8String:fullpath];
+   /* Copy file to documents directory if it's not already
     * inside Documents directory */
    if ([url startAccessingSecurityScopedResource]) {
       if (![[url path] containsString: self.documentsDirectory])
@@ -665,6 +693,13 @@ enum
             [manager copyItemAtPath:[url path] toPath:destination error:&error];
       [url stopAccessingSecurityScopedResource];
    }
+   task_push_dbscan(
+      settings->paths.directory_playlist,
+      settings->paths.path_content_database,
+      fullpath,
+      false,
+      false,
+      NULL);
    return true;
 }
 
@@ -746,6 +781,7 @@ ui_companion_driver_t ui_companion_cocoatouch = {
    NULL, /* is_active */
    ui_companion_cocoatouch_get_app_icons,
    ui_companion_cocoatouch_set_app_icon,
+   ui_companion_cocoatouch_get_app_icon_texture,
    NULL, /* browser_window */
    NULL, /* msg_window */
    NULL, /* window */

@@ -689,6 +689,7 @@
 #define DEFAULT_QUICK_MENU_SHOW_UNDO_SAVE_LOAD_STATE true
 #define DEFAULT_QUICK_MENU_SHOW_REPLAY false
 #define DEFAULT_QUICK_MENU_SHOW_ADD_TO_FAVORITES true
+#define DEFAULT_QUICK_MENU_SHOW_ADD_TO_PLAYLIST false
 #define DEFAULT_QUICK_MENU_SHOW_START_RECORDING true
 #define DEFAULT_QUICK_MENU_SHOW_START_STREAMING true
 #define DEFAULT_QUICK_MENU_SHOW_SET_CORE_ASSOCIATION true
@@ -1164,7 +1165,12 @@
 #endif
 
 /* Will sync audio. (recommended) */
+#ifdef IOS
+/* FIXME: coreaudio will cause the main thread to hang on backgrounding, causing a crash */
+#define DEFAULT_AUDIO_SYNC false
+#else
 #define DEFAULT_AUDIO_SYNC true
+#endif
 
 /* Audio rate control. */
 #if !defined(RARCH_CONSOLE)
@@ -1407,7 +1413,14 @@
 #define DEFAULT_FASTFORWARD_FRAMESKIP true
 
 /* Enable runloop for variable refresh rate screens. Force x1 speed while handling fast forward too. */
+#ifdef IOS
+/* FIXME: coreaudio will cause the main thread to hang on backgrounding, causing
+ * a crash. the fix is to turn off audio synchronization. with that off, we need
+ * this on */
+#define DEFAULT_VRR_RUNLOOP_ENABLE true
+#else
 #define DEFAULT_VRR_RUNLOOP_ENABLE false
+#endif
 
 /* Run core logic one or more frames ahead then load the state back to reduce perceived input lag. */
 #define DEFAULT_RUN_AHEAD_FRAMES 1
@@ -1822,13 +1835,7 @@
 
 #define DEFAULT_AI_SERVICE_MODE 1
 
-#define DEFAULT_AI_SERVICE_TEXT_POSITION 0
-#define DEFAULT_AI_SERVICE_TEXT_PADDING 5
-
 #define DEFAULT_AI_SERVICE_URL "http://localhost:4404/"
-
-#define DEFAULT_AI_SERVICE_POLL_DELAY 0
-#define MAXIMUM_AI_SERVICE_POLL_DELAY 500
 
 #if defined(HAVE_FFMPEG) || defined(HAVE_MPV)
 #define DEFAULT_BUILTIN_MEDIAPLAYER_ENABLE true
