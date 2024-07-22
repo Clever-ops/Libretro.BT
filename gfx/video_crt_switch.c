@@ -49,7 +49,7 @@ static char core_name[NAME_MAX_LENGTH]; /* Same size as library_name on retroarc
 static char content_dir[PATH_MAX_LENGTH];
 
 #if defined(HAVE_VIDEOCORE) /* Need to add video core to SR2 */
-#include "include/userland/interface/vmcs_host/vc_vchi_gencmd.h"
+#include <interface/vmcs_host/vc_vchi_gencmd.h>
 static void crt_rpi_switch(videocrt_switch_t *p_switch,int width, int height, float hz, int xoffset, int native_width);
 #endif
 
@@ -133,12 +133,14 @@ static void crt_switch_set_aspect(
       patched_height           = height;
    }
 
+#if !defined(HAVE_VIDEOCORE)
    sr_get_state(&state);
 
    if ((int)srm_width >= state.super_width && !srm_isstretched)
       RARCH_LOG("[CRT]: Super resolution detected. Fractal scaling @ X:%f Y:%f \n", srm_xscale, srm_yscale);
    else if (srm_isstretched && srm_width > 0 )
       RARCH_LOG("[CRT]: Resolution is stretched. Fractal scaling @ X:%f Y:%f \n", srm_xscale, srm_yscale);
+#endif
 
    scaled_width  = roundf(patched_width  * srm_xscale);
    scaled_height = roundf(patched_height * srm_yscale);
